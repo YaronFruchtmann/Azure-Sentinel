@@ -1,0 +1,30 @@
+id: c1e46ae6-e0c0-4e8c-8cb5-a70a5fa73893
+name: Network Service Scan
+description: |
+  'This query alerts on source ip addresses that sent connection requests over multiple ports over a short period. This could be an indication of adversary attemts to list available services on a host.'
+severity: Medium
+requiredDataConnectors:
+  - connectorId: NormalizationParsers
+    dataTypes: 
+      - NetworkSessions_Generic
+queryFrequency: 1h
+queryPeriod: 1h
+triggerOperator: gt
+triggerThreshold: 0
+tactics:
+  - Discovery
+relevantTechniques:
+  - T1046
+query: |
+
+  let threshold = 10;
+  NetworkSessions_Generic
+  | where isnotempty(DstPortNumber) and not(ipv4_is_private(DstIpAddr) ) 
+  | summarize PortCount=dcount(DstPort) by SrcIpAddr, bin(TimeGenerated, 1m)
+  | where PortCount > threshold
+  | extend IPCustomEntity = SrcIpAddr
+entityMappings:
+  - entityType: IP
+    fieldMappings:
+      - identifier: Address
+        columnName: IPCustomEntity
